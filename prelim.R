@@ -165,8 +165,8 @@ Q=function(theta, theta.star, missing.exceedances, x){
     obs.y=missing.exceedances[[i]][-ind.miss]
     if(length(ind.miss)==0){
       Q.out=Q.out-nllh(list(missing.exceedances[[i]]),x,theta)
-      print(i)
-      print(-nllh(list(missing.exceedances[[i]]),x,theta))
+      # print(i)
+      # print(-nllh(list(missing.exceedances[[i]]),x,theta))
     }else{
       
       
@@ -215,7 +215,7 @@ theta.star=theta0
 
 
 # Q(theta0,theta.star,missing.exceedances,x)
-opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
+opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
 # theta.star=opt$par
 # opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
 
