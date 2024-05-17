@@ -6,7 +6,7 @@ library(Pareto)
 
 set.seed(1)
 
-n <- 1000
+n <- 500
 
 
 
@@ -180,7 +180,6 @@ Q=function(theta, theta.star, missing.exceedances, x){
       # integral = cubature::cubintegrate(integrand, lower=rep(0,length(ind.miss)), upper = rep(Inf,length(ind.miss)))$integral
       
       y=apply(as.matrix(sample[,1:length(ind.miss)]),1,function(input){
-        
         out=missing.exceedances[[i]]
         out[ind.miss]=input
         out
@@ -197,12 +196,11 @@ Q=function(theta, theta.star, missing.exceedances, x){
       
       
       # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
-      integral = mean(-spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))/apply( as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
+      integral = mean(-spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
       Q.out = Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
       # print(i)
       # print("missing")
       # print((integral/exp(-nllh(list(obs.y),obs.x,theta.star))))
-      
     }
   }
   
@@ -214,7 +212,10 @@ theta.star=theta0
 
 
 # Q(theta0,theta.star,missing.exceedances,x)
-opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
+opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
+print(opt$par)
+theta.new <- c(opt$par[1], opt$par[2])
+diff(sum(abs()))
 # theta.star=opt$par
 # opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
 
