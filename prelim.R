@@ -200,9 +200,9 @@ Q=function(theta, theta.star, missing.exceedances, x){
   # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
     integral = mean(-spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))/apply( as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
       Q.out = Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
-      print(i)
-      print("missing")
-      print((integral/exp(-nllh(list(obs.y),obs.x,theta.star))))
+      # print(i)
+      # print("missing")
+      # print((integral/exp(-nllh(list(obs.y),obs.x,theta.star))))
     
     }
   }
@@ -214,7 +214,7 @@ theta0 = c(0.2, 1.8)
 theta.star=theta0
 
 
-Q(theta0,theta.star,missing.exceedances,x)
+# Q(theta0,theta.star,missing.exceedances,x)
 opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
 # theta.star=opt$par
 # opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
