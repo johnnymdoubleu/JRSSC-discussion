@@ -60,7 +60,7 @@ missing.data <- y
 n.locs = nrow(x)
 for(i in 1:length(missing.data)){
   
-  missing.data[[i]][1:8]=missing.data[[i]][1:8]*(rbinom(n.locs-2,1,prob=0.75))
+  missing.data[[i]][1:8]=missing.data[[i]][1:8]*(rbinom(n.locs-2,1,prob=0.9))
   missing.data[[i]][missing.data[[i]]==0]=NA
 }
 
@@ -151,7 +151,7 @@ spectralLikelihood <- function (obs, loc, vario, nCores = 1L, cl = NULL)
 
 
 Q=function(theta, theta.star, missing.exceedances, x){
-  
+
   n.exceed=length(missing.exceedances)
   if(theta[1] <= 0 | theta[2] <= 0 | theta[2] >= 2) return(1e30)
   if(theta.star[1] <= 0 | theta.star[2] <= 0 | theta.star[2] >= 2) return(1e30)
@@ -168,6 +168,7 @@ Q=function(theta, theta.star, missing.exceedances, x){
       print(i)
       print(-nllh(list(missing.exceedances[[i]]),x,theta))
     }else{
+<<<<<<< HEAD
       
       
     integrand=function(input){
@@ -177,6 +178,18 @@ Q=function(theta, theta.star, missing.exceedances, x){
     if(any(input<=0)) return(0)
      return(out)
     }
+=======
+      integrand=function(input){
+      missing.x=x[ind.miss,]; obs.x=x[-ind.miss,]
+      missing.y=missing.exceedances[[i]][ind.miss]; obs.y=missing.exceedances[[i]][-ind.miss]
+      integrand=function(y.m){
+        y=missing.exceedances[[i]]
+        y[ind.miss]=input
+        out = -nllh(list(y),x,theta)*(exp(-nllh(list(y),x,theta.star)))
+        if(any(input<=0)) return(0)
+        return(out)
+      }
+>>>>>>> 94fa3c1ecddf6771a3551a3ad8e10d68a8255694
      # integral = cubature::cubintegrate(integrand, lower=rep(0,length(ind.miss)), upper = rep(Inf,length(ind.miss)))$integral
       
       y=apply(as.matrix(sample[,1:length(ind.miss)]),1,function(input){
@@ -196,8 +209,6 @@ Q=function(theta, theta.star, missing.exceedances, x){
       }
    -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
     integral = mean(apply(as.matrix(sample[,1:length(ind.miss)]),1,integrand)/apply( as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
-
-      
       Q.out = Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
       print(i)
       print("missing")
@@ -208,10 +219,14 @@ Q=function(theta, theta.star, missing.exceedances, x){
 
   return(-Q.out)
 }
+<<<<<<< HEAD
 
 theta0 = c(0.2, 1.8)
 
 
+=======
+}
+>>>>>>> 94fa3c1ecddf6771a3551a3ad8e10d68a8255694
 Q(theta0,theta.star,missing.exceedances,x)
 theta.star=theta0
 opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
