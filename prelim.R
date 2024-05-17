@@ -30,7 +30,7 @@ exceedances <- y[sums > quantile(sums, 0.9)]
 
 # negative log-likelihood
 
-nllh <- function(theta) {
+nllh.spec <- function(theta) {
   
   aux <- function(x1_x2)
     
@@ -48,7 +48,7 @@ nllh <- function(theta) {
 
 
 
-optim(c(.5, .5), nllh, method = "BFGS")$par
+theta0 <- optim(c(.5, .5), nllh.spec, method = "BFGS")$par
 
 
 # recall the true values are (0.2, 1.8)
@@ -71,22 +71,22 @@ missing.exceedances <- missing.data[means > quantile(means, 0.9)]
 
 
 nllh <- function(y,x,theta) {
-  
+
   aux <- function(x1_x2)
-    
+
     svar(x1_x2, theta)
-  
+
   # impose parametric constraints via penalization
-  
+
   ifelse(theta[1] > 0 & theta[2] > 0 & theta[2] < 2,
-         
+
          spectralLikelihood(y, x, aux)[1],
-         
+
          1e10)
-  
+
 }
 
-theta0 = c(0.2, 1.8)
+# theta0 = c(0.2, 1)
 
 library(cubature)
 Q=function(theta, theta.star, missing.exceedances, x){
@@ -113,7 +113,7 @@ Q=function(theta, theta.star, missing.exceedances, x){
         return(out)
       }
       integral = cubature::cubintegrate(integrand, lower=0, upper = Inf)$integral
-      Q.out = Q.out + (integral*exp(-nllh(list(obs.y),obs.x,theta.star)))
+      Q.out = Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
     }
   }
   print(-Q.out)
@@ -121,9 +121,6 @@ Q=function(theta, theta.star, missing.exceedances, x){
 }
 
 theta.star=theta0
-opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
+opt <- optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
 # theta.star=opt$par
 # opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
-
-
-
