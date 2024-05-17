@@ -22,7 +22,6 @@ sums <- sapply(y, sum)
 exceedances <- y[sums > quantile(sums, 0.9)]
 
 
-
 # negative log-likelihood
 nllh <- function(theta) {
   aux <- function(x1_x2)
@@ -33,8 +32,6 @@ nllh <- function(theta) {
          spectralLikelihood(exceedances, x, aux)[1],
          10^10)
 }
-
- 
 
 optim(c(.5, .5), nllh, method = "BFGS")$par
 
