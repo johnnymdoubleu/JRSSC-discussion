@@ -92,8 +92,8 @@ library(cubature)
 Q=function(theta, theta.star, missing.exceedances, x){
   
   n.exceed=length(missing.exceedances)
-  if(theta[1] <= 0 | theta[2] <= 0 | theta[2] >= 2) return(1e10)
-  if(theta.star[1] <= 0 | theta.star[2] <= 0 | theta.star[2] >= 2) return(1e10)
+  if(theta[1] <= 0 | theta[2] <= 0 | theta[2] >= 2) return(1e30)
+  if(theta.star[1] <= 0 | theta.star[2] <= 0 | theta.star[2] >= 2) return(1e30)
   
   Q.out <-0
   for(i in 1:n.exceed){
@@ -108,18 +108,16 @@ Q=function(theta, theta.star, missing.exceedances, x){
       integrand=function(y.m){
         y=missing.exceedances[[i]]
         y[ind.miss]=y.m
-        out = -nllh(list(y),x,theta)*(exp(-nllh(list(y),x,theta.star)+nllh(list(obs.y),obs.x,theta.star)))
+        out = -nllh(list(y),x,theta)*(exp(-nllh(list(y),x,theta.star)))
         if(any(y.m<=0)) return(0)
         return(out)
       }
       integral = cubature::cubintegrate(integrand, lower=0, upper = Inf)$integral
-      print(integral)
-      Q.out = Q.out + integral
+      Q.out = Q.out + (integral*exp(-nllh(list(obs.y),obs.x,theta.star)))
     }
   }
-  
+  print(-Q.out)
   return(-Q.out)
-  
 }
 
 theta.star=theta0
