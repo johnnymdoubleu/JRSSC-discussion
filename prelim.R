@@ -147,7 +147,7 @@ spectralLikelihood <- function (obs, loc, vario, nCores = 1L, cl = NULL)
   (1/2 * logdetA + 1/2 * unlist(likelihood))
 }
 
-sample=matrix(rPareto(8*1e4,1,1),ncol=8)-1
+sample=matrix(rPareto(8*1e5,1,1),ncol=8)-1
 
 
 
@@ -198,7 +198,7 @@ Q=function(theta, theta.star, missing.exceedances, x){
       
       
   # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
-    integral = mean(-spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))/apply( as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
+    integral = mean(-spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))/apply( (as.matrix(sample[,1:length(ind.miss)]-1)^{-2},1,prod))
       Q.out = Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
       print(i)
       print("missing")
@@ -216,8 +216,8 @@ theta.star=theta0
 
 Q(theta0,theta.star,missing.exceedances,x)
 opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
-# theta.star=opt$par
-# opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
+ theta.star=opt$par
+opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
 
 
 
