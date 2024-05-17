@@ -197,8 +197,11 @@ Q=function(theta, theta.star, missing.exceedances, x){
       }
       
       
-      # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
-      integral = mean(-spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))/apply( as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
+
+  # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
+    integral = mean(-spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))/apply( as.matrix(sample[,1:length(ind.miss)]-1)^{-2},1,prod))
+
+
       Q.out = Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
       # print(i)
       # print("missing")
