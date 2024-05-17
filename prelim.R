@@ -30,7 +30,7 @@ exceedances <- y[sums > quantile(sums, 0.9)]
 
 # negative log-likelihood
 
-nllh.spec <- function(theta) {
+nllh <- function(theta) {
   
   aux <- function(x1_x2)
     
@@ -48,7 +48,7 @@ nllh.spec <- function(theta) {
 
 
 
-theta0 <- optim(c(.5, .5), nllh.spec, method = "BFGS")$par
+optim(c(.5, .5), nllh, method = "BFGS")$par
 
 
 # recall the true values are (0.2, 1.8)
@@ -71,24 +71,25 @@ missing.exceedances <- missing.data[means > quantile(means, 0.9)]
 
 
 nllh <- function(y,x,theta) {
-
+  
   aux <- function(x1_x2)
-
+    
     svar(x1_x2, theta)
-
+  
   # impose parametric constraints via penalization
-
+  
   ifelse(theta[1] > 0 & theta[2] > 0 & theta[2] < 2,
-
+         
          spectralLikelihood(y, x, aux)[1],
-
+         
          1e10)
-
+  
 }
 
-# theta0 = c(0.2, 1)
+theta0 = c(0.2, 1.8)
 
 library(cubature)
+library(Pareto)
 Q=function(theta, theta.star, missing.exceedances, x){
   
   n.exceed=length(missing.exceedances)
@@ -96,31 +97,46 @@ Q=function(theta, theta.star, missing.exceedances, x){
   if(theta.star[1] <= 0 | theta.star[2] <= 0 | theta.star[2] >= 2) return(1e30)
   
   Q.out <-0
+  
+  sample=matrix(rPareto(8*5e2,1,1),ncol=8)-1
   for(i in 1:n.exceed){
     ind.miss=which(is.na(missing.exceedances[[i]]))
-    missing.x=x[ind.miss,]; obs.x=x[-ind.miss,]
-    missing.y=missing.exceedances[[i]][ind.miss]; obs.y=missing.exceedances[[i]][-ind.miss]
+    obs.x=x[-ind.miss,]
+   obs.y=missing.exceedances[[i]][-ind.miss]
     if(length(ind.miss)==0){
       Q.out=Q.out-nllh(list(missing.exceedances[[i]]),x,theta)
+      print(i)
+      print(-nllh(list(missing.exceedances[[i]]),x,theta))
     }else{
       
       
-      integrand=function(y.m){
+      integrand=function(input){
         y=missing.exceedances[[i]]
-        y[ind.miss]=y.m
+        y[ind.miss]=input
         out = -nllh(list(y),x,theta)*(exp(-nllh(list(y),x,theta.star)))
-        if(any(y.m<=0)) return(0)
+        if(any(input<=0)) return(0)
         return(out)
       }
-      integral = cubature::cubintegrate(integrand, lower=0, upper = Inf)$integral
+     # integral = cubature::cubintegrate(integrand, lower=rep(0,length(ind.miss)), upper = rep(Inf,length(ind.miss)))$integral
+    integral = mean(apply(as.matrix(sample[,1:length(ind.miss)]),1,integrand)/apply( as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
+
+      
       Q.out = Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
+      print(i)
+      print("missing")
+      print((integral/exp(-nllh(list(obs.y),obs.x,theta.star))))
+    
     }
   }
-  print(-Q.out)
+
   return(-Q.out)
 }
 
+Q(theta0,theta.star,missing.exceedances,x)
 theta.star=theta0
-opt <- optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
+opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
 # theta.star=opt$par
 # opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
+
+
+
