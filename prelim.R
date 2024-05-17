@@ -158,7 +158,7 @@ Q=function(theta, theta.star, missing.exceedances, x){
   
   Q.out <-0
   
-  sample=matrix(rPareto(8*5e2,1,1),ncol=8)-1
+  sample=matrix(rPareto(8*5e3,1,1),ncol=8)-1
   for(i in 1:n.exceed){
     ind.miss=which(is.na(missing.exceedances[[i]]))
     obs.x=x[-ind.miss,]
@@ -168,28 +168,16 @@ Q=function(theta, theta.star, missing.exceedances, x){
       print(i)
       print(-nllh(list(missing.exceedances[[i]]),x,theta))
     }else{
-<<<<<<< HEAD
+
       
-      
-    integrand=function(input){
-       y=missing.exceedances[[i]]
-      y[ind.miss]=input
-       out = -nllh(list(y),x,theta)*(exp(-nllh(list(y),x,theta.star)))
-    if(any(input<=0)) return(0)
-     return(out)
-    }
-=======
-      integrand=function(input){
-      missing.x=x[ind.miss,]; obs.x=x[-ind.miss,]
-      missing.y=missing.exceedances[[i]][ind.miss]; obs.y=missing.exceedances[[i]][-ind.miss]
-      integrand=function(y.m){
-        y=missing.exceedances[[i]]
-        y[ind.miss]=input
-        out = -nllh(list(y),x,theta)*(exp(-nllh(list(y),x,theta.star)))
-        if(any(input<=0)) return(0)
-        return(out)
-      }
->>>>>>> 94fa3c1ecddf6771a3551a3ad8e10d68a8255694
+    # integrand=function(input){
+    #    y=missing.exceedances[[i]]
+    #   y[ind.miss]=input
+    #    out = -nllh(list(y),x,theta)*(exp(-nllh(list(y),x,theta.star)))
+    # if(any(input<=0)) return(0)
+    #  return(out)
+    # }
+     
      # integral = cubature::cubintegrate(integrand, lower=rep(0,length(ind.miss)), upper = rep(Inf,length(ind.miss)))$integral
       
       y=apply(as.matrix(sample[,1:length(ind.miss)]),1,function(input){
@@ -207,8 +195,10 @@ Q=function(theta, theta.star, missing.exceedances, x){
         
         svar(x1_x2, theta.star)
       }
-   -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
-    integral = mean(apply(as.matrix(sample[,1:length(ind.miss)]),1,integrand)/apply( as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
+      
+      
+  # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
+    integral = mean(-spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))/apply( as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
       Q.out = Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
       print(i)
       print("missing")
@@ -219,14 +209,10 @@ Q=function(theta, theta.star, missing.exceedances, x){
 
   return(-Q.out)
 }
-<<<<<<< HEAD
 
 theta0 = c(0.2, 1.8)
 
 
-=======
-}
->>>>>>> 94fa3c1ecddf6771a3551a3ad8e10d68a8255694
 Q(theta0,theta.star,missing.exceedances,x)
 theta.star=theta0
 opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
