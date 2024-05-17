@@ -84,6 +84,7 @@ nllh <- function(y,x,theta) {
          
          1e10)
 }
+#changed name due to confusion in the function call for spectralLiklihood()
 spectralLik <- function (obs, loc, vario, nCores = 1L, cl = NULL){
   if (is.matrix(obs)) {
     obs <- split(obs, row(obs))
@@ -139,13 +140,14 @@ spectralLik <- function (obs, loc, vario, nCores = 1L, cl = NULL){
   logdetA = determinant(psi, logarithm = TRUE)$modulus
   (1/2 * logdetA + 1/2 * unlist(likelihood))
 }
+
 theta0 = c(0.2, 1.8)
 theta.star <- theta0
 diff <- 1
 while(diff> 0.00001){
-sample=matrix(rPareto(8*1e4,1,1),ncol=8)-1
+sample <- matrix(rPareto(8*1e4,1,1),ncol=8)-1
 
-Q=function(theta, theta.star, missing.exceedances, x){
+Q <- function(theta, theta.star, missing.exceedances, x){
   n.exceed=length(missing.exceedances)
   if(theta[1] <= 0 | theta[2] <= 0 | theta[2] >= 2) return(1e30)
   if(theta.star[1] <= 0 | theta.star[2] <= 0 | theta.star[2] >= 2) return(1e30)
@@ -182,7 +184,8 @@ Q=function(theta, theta.star, missing.exceedances, x){
         svar(x1_x2, theta.star)
       }
       # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
-      integral = mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
+      # integral = mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
+      integral = mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]-1)^{-2},1,prod))      
       Q.out = Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
       # print(i)
       # print("missing")
