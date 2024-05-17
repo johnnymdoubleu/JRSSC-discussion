@@ -69,7 +69,7 @@ means <- sapply(missing.data, mean,na.rm=T)
 missing.exceedances <- missing.data[means > quantile(means, 0.9)]
 
 
-
+##########################################################################
 nllh <- function(y,x,theta) {
   
   aux <- function(x1_x2)
@@ -83,14 +83,8 @@ nllh <- function(y,x,theta) {
          spectralLikelihood(y, x, aux)[1],
          
          1e10)
-  
 }
-
-
-
-
-spectralLikelihood <- function (obs, loc, vario, nCores = 1L, cl = NULL) 
-{
+spectralLik <- function (obs, loc, vario, nCores = 1L, cl = NULL){
   if (is.matrix(obs)) {
     obs <- split(obs, row(obs))
   }
@@ -145,17 +139,16 @@ spectralLikelihood <- function (obs, loc, vario, nCores = 1L, cl = NULL)
   logdetA = determinant(psi, logarithm = TRUE)$modulus
   (1/2 * logdetA + 1/2 * unlist(likelihood))
 }
-
+theta0 = c(0.2, 1.8)
+theta.star <- theta0
+diff <- 1
+while(diff> 0.00001){
 sample=matrix(rPareto(8*1e4,1,1),ncol=8)-1
 
-
-
 Q=function(theta, theta.star, missing.exceedances, x){
-  
   n.exceed=length(missing.exceedances)
   if(theta[1] <= 0 | theta[2] <= 0 | theta[2] >= 2) return(1e30)
   if(theta.star[1] <= 0 | theta.star[2] <= 0 | theta.star[2] >= 2) return(1e30)
-  
   Q.out <-0
   
   for(i in 1:n.exceed){
@@ -166,9 +159,8 @@ Q=function(theta, theta.star, missing.exceedances, x){
       Q.out=Q.out-nllh(list(missing.exceedances[[i]]),x,theta)
       # print(i)
       # print(-nllh(list(missing.exceedances[[i]]),x,theta))
-    }else{
-      
-      
+    }
+    else{
       # integrand=function(input){
       #    y=missing.exceedances[[i]]
       #   y[ind.miss]=input
@@ -178,44 +170,35 @@ Q=function(theta, theta.star, missing.exceedances, x){
       # }
       
       # integral = cubature::cubintegrate(integrand, lower=rep(0,length(ind.miss)), upper = rep(Inf,length(ind.miss)))$integral
-      
       y=apply(as.matrix(sample[,1:length(ind.miss)]),1,function(input){
         out=missing.exceedances[[i]]
         out[ind.miss]=input
         out
       }, simplify=F)
-      
       aux <- function(x1_x2){
-        
         svar(x1_x2, theta)
       }
       aux2 <- function(x1_x2){
-        
         svar(x1_x2, theta.star)
       }
-      
-      
       # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
-      integral = mean(-spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
+      integral = mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
       Q.out = Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
       # print(i)
       # print("missing")
       # print((integral/exp(-nllh(list(obs.y),obs.x,theta.star))))
     }
   }
-  
   return(-Q.out)
 }
-
-theta0 = c(0.2, 1.8)
-theta.star=theta0
-
 
 # Q(theta0,theta.star,missing.exceedances,x)
 opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
 print(opt$par)
-theta.new <- c(opt$par[1], opt$par[2])
-diff(sum(abs()))
+theta.old <- theta.star
+theta.star <- c(opt$par[1], opt$par[2])
+diff <- sum(abs(theta.star - theta.old))
+}
 # theta.star=opt$par
 # opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
 
