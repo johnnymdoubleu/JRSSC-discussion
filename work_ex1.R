@@ -1,7 +1,7 @@
 ## FIT SUM-PARETO BROWN-RESNICK PROCESS
-
 require(mvPot)
-
+library(cubature)
+library(Pareto)
 
 
 set.seed(1)
@@ -87,8 +87,7 @@ nllh <- function(y,x,theta) {
 }
 
 
-library(cubature)
-library(Pareto)
+
 
 spectralLikelihood <- function (obs, loc, vario, nCores = 1L, cl = NULL) 
 {
