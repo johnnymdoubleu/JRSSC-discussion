@@ -147,6 +147,7 @@ spectralLikelihood <- function (obs, loc, vario, nCores = 1L, cl = NULL)
   (1/2 * logdetA + 1/2 * unlist(likelihood))
 }
 
+sample=matrix(rPareto(8*1e4,1,1),ncol=8)-1
 
 
 
@@ -158,7 +159,6 @@ Q=function(theta, theta.star, missing.exceedances, x){
   
   Q.out <-0
   
-  sample=matrix(rPareto(8*5e3,1,1),ncol=8)-1
   for(i in 1:n.exceed){
     ind.miss=which(is.na(missing.exceedances[[i]]))
     obs.x=x[-ind.miss,]
@@ -211,10 +211,10 @@ Q=function(theta, theta.star, missing.exceedances, x){
 }
 
 theta0 = c(0.2, 1.8)
+theta.star=theta0
 
 
 Q(theta0,theta.star,missing.exceedances,x)
-theta.star=theta0
 opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
 # theta.star=opt$par
 # opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
