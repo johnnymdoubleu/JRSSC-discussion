@@ -60,7 +60,7 @@ missing.data <- y
 n.locs = nrow(x)
 for(i in 1:length(missing.data)){
   
-  missing.data[[i]][1:8]=missing.data[[i]][1:8]*(rbinom(n.locs-2,1,prob=0.75))
+  missing.data[[i]][1:8]=missing.data[[i]][1:8]*(rbinom(n.locs-2,1,prob=0.9))
   missing.data[[i]][missing.data[[i]]==0]=NA
 }
 
@@ -91,7 +91,7 @@ theta0 = c(0.2, 1.8)
 library(cubature)
 library(Pareto)
 Q=function(theta, theta.star, missing.exceedances, x){
-  
+
   n.exceed=length(missing.exceedances)
   if(theta[1] <= 0 | theta[2] <= 0 | theta[2] >= 2) return(1e30)
   if(theta.star[1] <= 0 | theta.star[2] <= 0 | theta.star[2] >= 2) return(1e30)
@@ -108,9 +108,10 @@ Q=function(theta, theta.star, missing.exceedances, x){
       print(i)
       print(-nllh(list(missing.exceedances[[i]]),x,theta))
     }else{
-      
-      
       integrand=function(input){
+      missing.x=x[ind.miss,]; obs.x=x[-ind.miss,]
+      missing.y=missing.exceedances[[i]][ind.miss]; obs.y=missing.exceedances[[i]][-ind.miss]
+      integrand=function(y.m){
         y=missing.exceedances[[i]]
         y[ind.miss]=input
         out = -nllh(list(y),x,theta)*(exp(-nllh(list(y),x,theta.star)))
@@ -119,8 +120,6 @@ Q=function(theta, theta.star, missing.exceedances, x){
       }
      # integral = cubature::cubintegrate(integrand, lower=rep(0,length(ind.miss)), upper = rep(Inf,length(ind.miss)))$integral
     integral = mean(apply(as.matrix(sample[,1:length(ind.miss)]),1,integrand)/apply( as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
-
-      
       Q.out = Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
       print(i)
       print("missing")
@@ -131,7 +130,7 @@ Q=function(theta, theta.star, missing.exceedances, x){
 
   return(-Q.out)
 }
-
+}
 Q(theta0,theta.star,missing.exceedances,x)
 theta.star=theta0
 opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
