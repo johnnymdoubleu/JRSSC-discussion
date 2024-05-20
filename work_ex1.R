@@ -4,7 +4,7 @@ library(cubature)
 library(Pareto)
 
 
-# set.seed(1)
+set.seed(1)
 
 n <- 500
 
