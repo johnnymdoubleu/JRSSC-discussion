@@ -12,7 +12,7 @@ n <- 500
 
 # define semivariogram, locations (x), and simulate data (y)
 
-svar <- function(x1_x2, theta = c(0.2, 1.8))
+svar <- function(x1_x2, theta = c(0.5, 1))
   
   (norm(x1_x2, type = "2") / theta[1])^theta[2]
 
@@ -141,10 +141,10 @@ spectralLik <- function (obs, loc, vario, nCores = 1L, cl = NULL){
   (1/2 * logdetA + 1/2 * unlist(likelihood))
 }
 
-theta0 = c(0.2, 1.8)
+theta0 = c(0.5, 1)
 theta.star <- theta0
 diff <- 1
-while(diff> 1e-10){
+while(diff> 1e-7){
 sample <- matrix(rPareto(8*1e4,1,1),ncol=8)-1
 
 Q <- function(theta, theta.star, missing.exceedances, x){
@@ -196,7 +196,7 @@ Q <- function(theta, theta.star, missing.exceedances, x){
 }
 
 # Q(theta0,theta.star,missing.exceedances,x)
-opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
+opt <- optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
 print(opt$par)
 theta.old <- theta.star
 theta.star <- c(opt$par[1], opt$par[2])
