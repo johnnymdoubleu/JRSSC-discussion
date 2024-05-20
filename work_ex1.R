@@ -144,7 +144,7 @@ spectralLik <- function (obs, loc, vario, nCores = 1L, cl = NULL){
 theta0 = c(0.2, 1.8)
 theta.star <- theta0
 diff <- 1
-while(diff> 0.00001){
+while(diff> 1e-5){
 sample <- matrix(rPareto(8*1e4,1,1),ncol=8)-1
 
 Q <- function(theta, theta.star, missing.exceedances, x){
