@@ -49,7 +49,7 @@ nllh <- function(theta) {
 
 
 opt <- optim(c(.5, .5), nllh, method = "BFGS")$par
-print(opt)
+cat(opt, "Initialisation with only observed data")
 theta0 <- c(opt[1], opt[2])
 
 # recall the true values are (0.2, 1.8)
@@ -145,7 +145,7 @@ spectralLik <- function (obs, loc, vario, nCores = 1L, cl = NULL){
 theta.star <- theta0
 diff <- 1
 while(diff> 1e-3){
-sample <- matrix(rPareto(8*1e4, 1, 1), ncol=8)
+sample <- matrix(rPareto(8*1e4, 1, 1), ncol=8)-1
 
 Q <- function(theta, theta.star, missing.exceedances, x){
   n.exceed=length(missing.exceedances)
@@ -185,7 +185,7 @@ Q <- function(theta, theta.star, missing.exceedances, x){
       }
       # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
       # integral = mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
-      integral <- mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)])^{-2}, 1, prod))
+      integral <- mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]+1)^{-2}, 1, prod))
       Q.out <- Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
       # print(i)
       # print("missing")
@@ -196,7 +196,11 @@ Q <- function(theta, theta.star, missing.exceedances, x){
 }
 
 # Q(theta0,theta.star,missing.exceedances,x)
-opt <- optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x, method = "BFGS")
+opt <- optim(par = theta0, 
+             fn = Q,
+             theta.star = theta0,
+             missing.exceedances = missing.exceedances,
+             x = x)
 print(opt$par)
 theta.old <- theta.star
 theta.star <- c(opt$par[1], opt$par[2])
