@@ -4,7 +4,7 @@ library(cubature)
 library(Pareto)
 
 
-set.seed(1)
+# set.seed(1)
 
 n <- 500
 
@@ -14,7 +14,7 @@ n <- 500
 
 svar <- function(x1_x2, theta = c(0.5, 1))
   
-  (norm(x1_x2, type = "2") / theta[1])^theta[2]
+  (norm(x1_x2, type = "2") / (2*theta[1]))^theta[2]
 
 x <- expand.grid(1:5, 1:2)
 
@@ -48,8 +48,9 @@ nllh <- function(theta) {
 
 
 
-optim(c(.5, .5), nllh, method = "BFGS")$par
-
+opt <- optim(c(.5, .5), nllh, method = "BFGS")$par
+print(opt)
+theta0 <- c(opt[1], opt[2])
 
 # recall the true values are (0.2, 1.8)
 
@@ -59,8 +60,7 @@ optim(c(.5, .5), nllh, method = "BFGS")$par
 missing.data <- y
 n.locs = nrow(x)
 for(i in 1:length(missing.data)){
-  
-  missing.data[[i]][1:8]=missing.data[[i]][1:8]*(rbinom(n.locs-2,1,prob=0.9))
+  missing.data[[i]]=missing.data[[i]]*(rbinom(n.locs-2,1,prob=0.9))
   missing.data[[i]][missing.data[[i]]==0]=NA
 }
 
@@ -141,11 +141,11 @@ spectralLik <- function (obs, loc, vario, nCores = 1L, cl = NULL){
   (1/2 * logdetA + 1/2 * unlist(likelihood))
 }
 
-theta0 = c(0.5, 1)
+# theta0 <- c(0.5, 1)
 theta.star <- theta0
 diff <- 1
-while(diff> 1e-7){
-sample <- matrix(rPareto(8*1e4,1,1),ncol=8)-1
+while(diff> 1e-3){
+sample <- matrix(rPareto(8*1e4, 1, 1), ncol=8)
 
 Q <- function(theta, theta.star, missing.exceedances, x){
   n.exceed=length(missing.exceedances)
@@ -185,8 +185,8 @@ Q <- function(theta, theta.star, missing.exceedances, x){
       }
       # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
       # integral = mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
-      integral = mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]+1)^{-2},1,prod))      
-      Q.out = Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
+      integral <- mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)])^{-2}, 1, prod))
+      Q.out <- Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
       # print(i)
       # print("missing")
       # print((integral/exp(-nllh(list(obs.y),obs.x,theta.star))))
