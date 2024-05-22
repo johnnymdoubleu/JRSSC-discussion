@@ -5,8 +5,8 @@ library(Pareto)
 library(copula)
 library(evd)
 # 
-# ncores <- 8
-# cl <- parallel::makeCluster(ncores)
+ncores <- 8
+cl <- parallel::makeCluster(ncores)
 
 # set.seed(5)
 
@@ -194,7 +194,7 @@ while(diff> 1e-3){
         }
         # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
         # integral = mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
-        integral <- mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/sample.dens.list[[length(ind.miss)]])
+        integral <- mean(-spectralLik(y,x,aux, nCores, cl)*(exp(-spectralLik(y,x,aux2, nCores, cl)))/sample.dens.list[[length(ind.miss)]])
         
         Q.out <- Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
         # print(i)
@@ -202,7 +202,7 @@ while(diff> 1e-3){
         # print((integral/exp(-nllh(list(obs.y),obs.x,theta.star))))
       }
     }
-    print(-Q.out)
+    # print(-Q.out)
     return(-Q.out)
   }
   
