@@ -2,11 +2,10 @@
 library(mvPot)
 library(cubature)
 library(Pareto)
-library(parallel)
 library(evd)
 
 ncores <- 8
-cl <- makeCluster(ncores)
+cl <- parellel::makeCluster(ncores)
 
 set.seed(5)
 
