@@ -1,5 +1,5 @@
 ## FIT SUM-PARETO BROWN-RESNICK PROCESS
-require(mvPot)
+library(mvPot)
 library(cubature)
 library(Pareto)
 
@@ -7,8 +7,6 @@ library(Pareto)
 # set.seed(1)
 
 n <- 500
-
-
 
 # define semivariogram, locations (x), and simulate data (y)
 
@@ -53,8 +51,6 @@ cat(opt, "Initialisation with only observed data")
 theta0 <- c(opt[1], opt[2])
 
 # recall the true values are (0.2, 1.8)
-
-
 
 
 missing.data <- y
