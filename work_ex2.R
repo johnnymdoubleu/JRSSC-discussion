@@ -3,9 +3,10 @@ library(mvPot)
 library(cubature)
 library(Pareto)
 library(parallel)
+library(evd)
 
-ncores=8
-cl = makeCluster(ncores)
+ncores <- 8
+cl <- makeCluster(ncores)
 
 set.seed(5)
 
