@@ -2,10 +2,7 @@
 library(mvPot)
 library(cubature)
 library(Pareto)
-library(parallel)
 
-ncores=8
-cl = makeCluster(ncores)
 set.seed(2)
 
 n <- 1000
@@ -146,16 +143,29 @@ theta.star <- theta0
 diff <- 1
 
 library(evd)
-sample <- matrix(rgev(8*1e5, 1, 1,1), ncol=8)
+library(copula)
+n.samples=1e5
+sample.list=vector("list",8)
+sample.dens.list=sample.list
 
+sample.list[[1]]=as.matrix(rgev(n.samples,1,1,1))
+sample.dens.list[[1]]=apply(as.matrix(sample.list[[1]]),2,function(x) dgev(x,1,1,1))
+for(i in 2:8){
+gumbel.cop <- archmCopula("gumbel", 2, dim = i)
+sample <- rCopula(1e5,gumbel.cop)
+sample.gev <- qgev(sample,1,1,1)
+sample.list[[i]]= sample.gev
+sample.dens.list[[i]]<-as.matrix(apply(apply(as.matrix(sample.gev),2,function(x) dgev(x,1,1,1)),1,prod) * dCopula(sample,gumbel.cop))
+}
 while(diff> 1e-3){
 
-Q <- function(theta, theta.star, missing.exceedances, x){
+Q <- function(par, theta.star, missing.exceedances, x){
+  theta=par
   n.exceed=length(missing.exceedances)
   if(theta[1] <= 0 | theta[2] <= 0 | theta[2] >= 2) return(1e50)
   if(theta.star[1] <= 0 | theta.star[2] <= 0 | theta.star[2] >= 2) return(1e50)
   Q.out <-0
-  
+
   for(i in 1:n.exceed){
     ind.miss=which(is.na(missing.exceedances[[i]]))
     obs.x=x[-ind.miss,]
@@ -174,12 +184,13 @@ Q <- function(theta, theta.star, missing.exceedances, x){
       # }
       
       # integral = cubature::cubintegrate(integrand, lower=rep(0,length(ind.miss)), upper = rep(Inf,length(ind.miss)))$integral
-
-      y=apply(as.matrix(sample[,1:length(ind.miss)]),1,function(input){
+      sample <- sample.list[[length(ind.miss)]]
+      y=apply(as.matrix(sample),1,function(input){
         out=missing.exceedances[[i]]
         out[ind.miss]=input
         out
       }, simplify=F)
+      
       aux <- function(x1_x2){
         svar(x1_x2, theta)
       }
@@ -188,7 +199,7 @@ Q <- function(theta, theta.star, missing.exceedances, x){
       }
       # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
       # integral = mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
-      integral <- mean(-spectralLik(y,x,aux,nCores=ncores,cl=cl)*(exp(-spectralLik(y,x,aux2,nCores = ncores,cl=cl)))/apply(apply(as.matrix(sample[,1:length(ind.miss)]),2,function(x) dgev(x,1,1,1)), 1, prod))
+      integral <- mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/sample.dens.list[[length(ind.miss)]])
       
       Q.out <- Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
       # print(i)
