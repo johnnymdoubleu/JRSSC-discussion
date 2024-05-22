@@ -4,7 +4,7 @@ library(cubature)
 library(Pareto)
 
 
-# set.seed(1)
+set.seed(2)
 
 n <- 500
 
@@ -194,7 +194,7 @@ Q <- function(theta, theta.star, missing.exceedances, x){
 # Q(theta0,theta.star,missing.exceedances,x)
 opt <- optim(par = theta0, 
              fn = Q,
-             theta.star = theta0,
+             theta.star = theta.star,
              missing.exceedances = missing.exceedances,
              x = x)
 print(opt$par)
