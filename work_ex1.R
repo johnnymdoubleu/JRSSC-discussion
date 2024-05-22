@@ -144,15 +144,15 @@ diff <- 1
 
 library(evd)
 library(copula)
-n.samples=1e5
-sample.list=vector("list",8)
+n.samples=2e5
+sample.list=vector("list",n.locs-2)
 sample.dens.list=sample.list
 
 sample.list[[1]]=as.matrix(rgev(n.samples,1,1,1))
 sample.dens.list[[1]]=apply(as.matrix(sample.list[[1]]),2,function(x) dgev(x,1,1,1))
-for(i in 2:8){
+for(i in 2:(n.locs-2)){
 gumbel.cop <- archmCopula("gumbel", 5, dim = i)
-sample <- rCopula(1e5,gumbel.cop)
+sample <- rCopula(n.samples,gumbel.cop)
 sample.gev <- qgev(sample,1,1,1) 
 sample.list[[i]]= sample.gev
 sample.dens.list[[i]]<-as.matrix(apply(apply(as.matrix(sample.gev),2,function(x) dgev(x,1,1,1)),1,prod) * dCopula(sample,gumbel.cop))
