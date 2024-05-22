@@ -149,7 +149,7 @@ sample.list=vector("list",n.locs-2)
 sample.dens.list=sample.list
 
 sample.list[[1]]=as.matrix(rgev(n.samples,1,1,1))
-sample.dens.list[[1]]=apply(as.matrix(sample.list[[1]]),2,function(x) dgev(x,1,1,1))
+sample.dens.list[[1]]= as.matrix(dgev(sample.list[[1]],1,1,1))
 for(i in 2:(n.locs-2)){
 gumbel.cop <- archmCopula("gumbel", 5, dim = i)
 sample <- rCopula(n.samples,gumbel.cop)
