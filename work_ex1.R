@@ -10,11 +10,12 @@ n <- 500
 
 # define semivariogram, locations (x), and simulate data (y)
 
-svar <- function(x1_x2, theta = c(0.5, 1))
+# Max theta[1] < 1; theta[2] \approx 1
+svar <- function(x1_x2, theta = c(0.2, 1))
   
-  (norm(x1_x2, type = "2") / (2*theta[1]))^theta[2]
+  0.5*(norm(x1_x2, type = "2") / (theta[1]))^theta[2]
 
-x <- expand.grid(1:5, 1:2)
+x <- expand.grid(seq(0,1,length=3),seq(0,1,length=3))
 
 K <- dim(x)[1]
 
@@ -140,13 +141,14 @@ spectralLik <- function (obs, loc, vario, nCores = 1L, cl = NULL){
 # theta0 <- c(0.5, 1)
 theta.star <- theta0
 diff <- 1
-while(diff> 1e-3){
 sample <- matrix(rPareto(8*1e4, 1, 1), ncol=8)-1
+
+while(diff> 1e-3){
 
 Q <- function(theta, theta.star, missing.exceedances, x){
   n.exceed=length(missing.exceedances)
-  if(theta[1] <= 0 | theta[2] <= 0 | theta[2] >= 2) return(1e30)
-  if(theta.star[1] <= 0 | theta.star[2] <= 0 | theta.star[2] >= 2) return(1e30)
+  if(theta[1] <= 0 | theta[2] <= 0 | theta[2] >= 2) return(1e50)
+  if(theta.star[1] <= 0 | theta.star[2] <= 0 | theta.star[2] >= 2) return(1e50)
   Q.out <-0
   
   for(i in 1:n.exceed){
@@ -192,7 +194,7 @@ Q <- function(theta, theta.star, missing.exceedances, x){
 }
 
 # Q(theta0,theta.star,missing.exceedances,x)
-opt <- optim(par = theta0, 
+opt <- optim(par = theta.star, 
              fn = Q,
              theta.star = theta.star,
              missing.exceedances = missing.exceedances,
@@ -200,7 +202,10 @@ opt <- optim(par = theta0,
 print(opt$par)
 theta.old <- theta.star
 theta.star <- c(opt$par[1], opt$par[2])
+print(theta.old)
+print(theta.star)
 diff <- sum(abs(theta.star - theta.old))
+print(diff)
 }
 # theta.star=opt$par
 # opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
