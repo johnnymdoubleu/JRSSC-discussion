@@ -14,7 +14,7 @@ n <- 500
 
 # define semivariogram, locations (x), and simulate data (y)
 
-svar <- function(x1_x2, theta = c(0.5, 1))
+svar <- function(x1_x2, theta = c(0.3, 0.8))
   
   (norm(x1_x2, type = "2") / (theta[1]))^theta[2]
 
