@@ -2,16 +2,19 @@
 library(mvPot)
 library(cubature)
 library(Pareto)
+library(parallel)
 
-
+ncores=8
+cl = makeCluster(ncores)
 set.seed(2)
 
-n <- 500
+n <- 1000
 
 # define semivariogram, locations (x), and simulate data (y)
 
 # Max theta[1] < 1; theta[2] \approx 1
-svar <- function(x1_x2, theta = c(0.2, 1))
+
+svar <- function(x1_x2, theta = c(0.3, 0.8))
   
   0.5*(norm(x1_x2, type = "2") / (theta[1]))^theta[2]
 
@@ -138,10 +141,12 @@ spectralLik <- function (obs, loc, vario, nCores = 1L, cl = NULL){
   (1/2 * logdetA + 1/2 * unlist(likelihood))
 }
 
-# theta0 <- c(0.5, 1)
+ theta0 <- c(0.5, 1)
 theta.star <- theta0
 diff <- 1
-sample <- matrix(rPareto(8*1e4, 1, 1), ncol=8)-1
+
+library(evd)
+sample <- matrix(rgev(8*1e5, 1, 1,1), ncol=8)
 
 while(diff> 1e-3){
 
@@ -159,8 +164,7 @@ Q <- function(theta, theta.star, missing.exceedances, x){
       Q.out=Q.out-nllh(list(missing.exceedances[[i]]),x,theta)
       # print(i)
       # print(-nllh(list(missing.exceedances[[i]]),x,theta))
-    }
-    else{
+    }else{
       # integrand=function(input){
       #    y=missing.exceedances[[i]]
       #   y[ind.miss]=input
@@ -170,6 +174,7 @@ Q <- function(theta, theta.star, missing.exceedances, x){
       # }
       
       # integral = cubature::cubintegrate(integrand, lower=rep(0,length(ind.miss)), upper = rep(Inf,length(ind.miss)))$integral
+
       y=apply(as.matrix(sample[,1:length(ind.miss)]),1,function(input){
         out=missing.exceedances[[i]]
         out[ind.miss]=input
@@ -183,23 +188,24 @@ Q <- function(theta, theta.star, missing.exceedances, x){
       }
       # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
       # integral = mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
-      integral <- mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]+1)^{-2}, 1, prod))
+      integral <- mean(-spectralLik(y,x,aux,nCores=ncores,cl=cl)*(exp(-spectralLik(y,x,aux2,nCores = ncores,cl=cl)))/apply(apply(as.matrix(sample[,1:length(ind.miss)]),2,function(x) dgev(x,1,1,1)), 1, prod))
+      
       Q.out <- Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
       # print(i)
       # print("missing")
       # print((integral/exp(-nllh(list(obs.y),obs.x,theta.star))))
     }
   }
+  print(-Q.out)
   return(-Q.out)
 }
 
-# Q(theta0,theta.star,missing.exceedances,x)
+ Q(theta0,theta.star,missing.exceedances,x)
 opt <- optim(par = theta.star, 
              fn = Q,
              theta.star = theta.star,
              missing.exceedances = missing.exceedances,
              x = x)
-print(opt$par)
 theta.old <- theta.star
 theta.star <- c(opt$par[1], opt$par[2])
 print(theta.old)
