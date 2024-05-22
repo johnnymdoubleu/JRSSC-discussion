@@ -2,6 +2,8 @@
 library(mvPot)
 library(cubature)
 library(Pareto)
+library(parallel)
+
 ncores=8
 cl = makeCluster(ncores)
 
