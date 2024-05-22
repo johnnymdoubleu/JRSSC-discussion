@@ -8,7 +8,7 @@ library(evd)
 ncores <- 8
 cl <- parallel::makeCluster(ncores)
 
-set.seed(5)
+# set.seed(5)
 
 n <- 500
 
