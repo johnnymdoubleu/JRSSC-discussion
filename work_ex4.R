@@ -202,7 +202,7 @@ library(compositions)
 for(i in 1:length(sample.list)){
   dim=sum(is.na(missing.exceedances[[i]]))
   
-  m=mean(obs.y)
+  m=mean(missing.exceedances[[i]],na.rm=T)
   
   if(dim==1){
     
