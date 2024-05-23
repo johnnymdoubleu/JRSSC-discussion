@@ -3,7 +3,7 @@ library(mvPot)
 library(cubature)
 library(Pareto)
 
-set.seed(2)
+# set.seed(2)
 
 n <- 500
 
