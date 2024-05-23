@@ -5,7 +5,7 @@ library(Pareto)
 
 set.seed(2)
 
-n <- 1000
+n <- 500
 
 # define semivariogram, locations (x), and simulate data (y)
 
@@ -57,7 +57,12 @@ theta0 <- c(opt[1], opt[2])
 missing.data <- y
 n.locs = nrow(x)
 for(i in 1:length(missing.data)){
-  missing.data[[i]]=missing.data[[i]]*(rbinom(n.locs-2,1,prob=0.9))
+  tmp=0
+  while(tmp ==0){
+  missing.inds=rbinom(n.locs,1,prob=0.8)
+  if(sum(missing.inds)>=2) tmp=1
+  }
+  missing.data[[i]]=missing.data[[i]]*missing.inds
   missing.data[[i]][missing.data[[i]]==0]=NA
 }
 
@@ -143,20 +148,42 @@ theta.star <- theta0
 diff <- 1
 
 library(evd)
-library(copula)
-n.samples=2e5
-sample.list=vector("list",n.locs-2)
+library(mvtnorm)
+
+n.samples=2e4
+xi = 2
+rho=0.2
+
+sample.list=vector("list",length(missing.exceedances))
 sample.dens.list=sample.list
 
-sample.list[[1]]=as.matrix(rgev(n.samples,1,1,1))
-sample.dens.list[[1]]= as.matrix(dgev(sample.list[[1]],1,1,1))
-for(i in 2:(n.locs-2)){
-gumbel.cop <- archmCopula("gumbel", 5, dim = i)
-sample <- rCopula(n.samples,gumbel.cop)
-sample.gev <- qgev(sample,1,1,1) 
-sample.list[[i]]= sample.gev
-sample.dens.list[[i]]<-as.matrix(apply(apply(as.matrix(sample.gev),2,function(x) dgev(x,1,1,1)),1,prod) * dCopula(sample,gumbel.cop))
+
+
+for(i in 1:length(sample.list)){
+  dim=sum(is.na(missing.exceedances[[i]]))
+
+  m=median(missing.exceedances[[i]],na.rm=T)
+  mu = m*log(2)^xi
+  sigma = mu*xi
+  if(dim==1){
+   
+    sample.list[[i]]=as.matrix(rgev(n.samples,mu,sigma,xi))
+    
+      sample.dens.list[[i]]= as.matrix(dgev(sample.list[[i]],mu,sigma,xi))
+     } 
+  if(dim>1){
+  
+    Sigma=matrix(rho,nrow=dim,ncol=dim)
+  diag(Sigma)=1
+  
+  sample <- rmvnorm(n.samples,mean=rep(0,dim),sigma=Sigma)
+  sample.gev <- apply(sample,c(2),function(x) qgev(pnorm(x),mu,sigma,xi))
+  sample.list[[i]]= sample.gev
+  sample.dens.list[[i]]<-as.matrix(apply(apply(sample.gev,2,function(x) dgev(x,mu,sigma,xi)),1,prod) * dmvnorm(sample,mean=rep(0,dim),sigma=Sigma))
+
+  }
 }
+
 while(diff> 1e-3){
 
 Q <- function(par, theta.star, missing.exceedances, x){
@@ -184,7 +211,7 @@ Q <- function(par, theta.star, missing.exceedances, x){
       # }
       
       # integral = cubature::cubintegrate(integrand, lower=rep(0,length(ind.miss)), upper = rep(Inf,length(ind.miss)))$integral
-      sample <- sample.list[[length(ind.miss)]]
+      sample <- sample.list[[i]]
       y=apply(as.matrix(sample),1,function(input){
         out=missing.exceedances[[i]]
         out[ind.miss]=input
@@ -199,9 +226,11 @@ Q <- function(par, theta.star, missing.exceedances, x){
       }
       # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
       # integral = mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
-      integral <- mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/sample.dens.list[[length(ind.miss)]])
+      
+      integral <- mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/sample.dens.list[[i]])
       
       Q.out <- Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
+      print(Q.out)
       # print(i)
       # print("missing")
       # print((integral/exp(-nllh(list(obs.y),obs.x,theta.star))))
