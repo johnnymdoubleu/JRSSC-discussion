@@ -230,7 +230,7 @@ while(diff> 1e-3){
         integral <- mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/sample.dens.list[[i]])
         
         Q.out <- Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
-        print(Q.out)
+        # print(Q.out)
         # print(i)
         # print("missing")
         # print((integral/exp(-nllh(list(obs.y),obs.x,theta.star))))
