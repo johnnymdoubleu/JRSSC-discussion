@@ -5,8 +5,8 @@ library(Pareto)
 library(copula)
 library(evd)
 # 
-ncores <- 8
-cl <- parallel::makeCluster(ncores)
+nCores <- 8
+cl <- parallel::makeCluster(nCores)
 
 # set.seed(5)
 
