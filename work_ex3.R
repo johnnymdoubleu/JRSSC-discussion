@@ -2,7 +2,7 @@
 library(mvPot)
 library(cubature)
 library(Pareto)
-suppressMessages(library(compositions))
+
 set.seed(2)
 
 n <- 500
@@ -187,7 +187,7 @@ diff <- 1
 #   }
 # }
 
-
+library(compositions)
 
 
 n.samples=1e4
@@ -195,15 +195,14 @@ rho=0.3
 
 sample.list=vector("list",length(missing.exceedances))
 sample.dens.list=sample.list
-
+library(compositions)
 
 
 
 for(i in 1:length(sample.list)){
   dim=sum(is.na(missing.exceedances[[i]]))
   
-  # m=mean(obs.y)
-  m <- mean(means[1], na.rm=T)
+  m=mean(missing.exceedances[[i]],na.rm=T)
   
   if(dim==1){
     
@@ -224,8 +223,9 @@ for(i in 1:length(sample.list)){
   }
 }
 
-
-while(diff> 1e-3){
+epsilon <- 1e-3
+cat("with epsilon:",epsilon)
+while(diff> epsilon){
   
   Q <- function(par, theta.star, missing.exceedances, x){
     theta=par
