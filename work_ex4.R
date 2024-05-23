@@ -5,7 +5,7 @@ library(Pareto)
 
 set.seed(4)
 
-n <- 200
+n <- 1000
 
 # define semivariogram, locations (x), and simulate data (y)
 
@@ -190,7 +190,7 @@ diff <- 1
 library(compositions)
 
 
-n.samples=1e4
+n.samples=5e4
 rho=0.1
 
 sample.list=vector("list",length(missing.exceedances))
