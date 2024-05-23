@@ -59,7 +59,7 @@ n.locs = nrow(x)
 for(i in 1:length(missing.data)){
   tmp=0
   while(tmp ==0){
-    missing.inds=rbinom(n.locs,1,prob=0.8)
+    missing.inds=rbinom(n.locs,1,prob=0.9)
     if(sum(missing.inds)>=2) tmp=1
   }
   missing.data[[i]]=missing.data[[i]]*missing.inds
@@ -147,42 +147,82 @@ theta0 <- c(0.5, 1)
 theta.star <- theta0
 diff <- 1
 
-library(evd)
-library(mvtnorm)
+# library(evd)
+# library(mvtnorm)
+# 
+# n.samples=5e4
+# xi =1
+# rho=0
+# 
+# sample.list=vector("list",length(missing.exceedances))
+# sample.dens.list=sample.list
+# 
+# 
+# 
+# for(i in 1:length(sample.list)){
+#   dim=sum(is.na(missing.exceedances[[i]]))
+#   
+#   # m=median(missing.exceedances[[i]],na.rm=T)
+#   # 
+#   # mu = m*log(2)^xi
+#   # sigma = mu*xi
+#   mu<-sigma<-1
+#   
+#   if(dim==1){
+#     
+#     sample.list[[i]]=as.matrix(rgev(n.samples,mu,sigma,xi))
+#     
+#     sample.dens.list[[i]]= as.matrix(dgev(sample.list[[i]],mu,sigma,xi))
+#   } 
+#   if(dim>1){
+#     
+#     Sigma=matrix(rho,nrow=dim,ncol=dim)
+#     diag(Sigma)=1
+#     
+#     sample <- rmvnorm(n.samples,mean=rep(0,dim),sigma=Sigma)
+#     sample.gev <- apply(sample,c(2),function(x) qgev(pnorm(x),mu,sigma,xi))
+#     sample.list[[i]]= sample.gev
+#     sample.dens.list[[i]]<-as.matrix(apply(apply(sample.gev,2,function(x) dgev(x,mu,sigma,xi)),1,prod) * dmvnorm(sample,mean=rep(0,dim),sigma=Sigma))
+#     
+#   }
+# }
 
-n.samples=2e4
-xi = 2
-rho=0.2
+library(compositions)
+
+
+n.samples=1e4
+rho=0.3
 
 sample.list=vector("list",length(missing.exceedances))
 sample.dens.list=sample.list
+library(compositions)
 
 
 
 for(i in 1:length(sample.list)){
   dim=sum(is.na(missing.exceedances[[i]]))
   
-  m=median(missing.exceedances[[i]],na.rm=T)
-  mu = m*log(2)^xi
-  sigma = mu*xi
+  m=mean(obs.y)
+  
   if(dim==1){
     
-    sample.list[[i]]=as.matrix(rgev(n.samples,mu,sigma,xi))
+    sample.list[[i]]=as.matrix(rlnorm(n.samples,log(m)))
     
-    sample.dens.list[[i]]= as.matrix(dgev(sample.list[[i]],mu,sigma,xi))
+    sample.dens.list[[i]]= as.matrix(dlnorm(sample.list[[i]],log(m)))
   } 
   if(dim>1){
-    
     Sigma=matrix(rho,nrow=dim,ncol=dim)
     diag(Sigma)=1
     
-    sample <- rmvnorm(n.samples,mean=rep(0,dim),sigma=Sigma)
-    sample.gev <- apply(sample,c(2),function(x) qgev(pnorm(x),mu,sigma,xi))
-    sample.list[[i]]= sample.gev
-    sample.dens.list[[i]]<-as.matrix(apply(apply(sample.gev,2,function(x) dgev(x,mu,sigma,xi)),1,prod) * dmvnorm(sample,mean=rep(0,dim),sigma=Sigma))
+    sample.rplus <- rlnorm.rplus(n.samples,rep(log(m),dim),varlog=Sigma)
+    
+    
+    sample.list[[i]]= sample.rplus
+    sample.dens.list[[i]]<-as.matrix( dlnorm.rplus(sample.rplus,mean=rep(log(m),dim),varlog=Sigma))
     
   }
 }
+
 
 while(diff> 1e-3){
   
@@ -240,12 +280,12 @@ while(diff> 1e-3){
     return(-Q.out)
   }
   
-  Q(theta0,theta.star,missing.exceedances,x)
+  #Q(theta0,theta.star,missing.exceedances,x)
   opt <- optim(par = theta.star, 
                fn = Q,
                theta.star = theta.star,
                missing.exceedances = missing.exceedances,
-               x = x)
+               x = x, control=list(maxit=50))
   theta.old <- theta.star
   theta.star <- c(opt$par[1], opt$par[2])
   print(theta.old)
