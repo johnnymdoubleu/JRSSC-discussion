@@ -2,7 +2,7 @@
 library(mvPot)
 library(cubature)
 library(Pareto)
-
+suppressMessages(library(compositions))
 set.seed(2)
 
 n <- 500
@@ -187,7 +187,7 @@ diff <- 1
 #   }
 # }
 
-library(compositions)
+
 
 
 n.samples=1e4
@@ -195,7 +195,7 @@ rho=0.3
 
 sample.list=vector("list",length(missing.exceedances))
 sample.dens.list=sample.list
-library(compositions)
+
 
 
 
