@@ -2,19 +2,16 @@
 library(mvPot)
 library(cubature)
 library(Pareto)
-library(copula)
-library(evd)
-# 
-nCores <- 8
-cl <- parallel::makeCluster(nCores)
 
-# set.seed(5)
+set.seed(2)
 
 n <- 500
 
 # define semivariogram, locations (x), and simulate data (y)
 
-svar <- function(x1_x2, theta = c(0.5, 1))
+# Max theta[1] < 1; theta[2] \approx 1
+
+svar <- function(x1_x2, theta = c(0.3, 0.8))
   
   0.5*(norm(x1_x2, type = "2") / (theta[1]))^theta[2]
 
@@ -48,6 +45,8 @@ nllh <- function(theta) {
   
 }
 
+
+
 opt <- optim(c(.5, .5), nllh, method = "BFGS")$par
 cat(opt, "Initialisation with only observed data")
 theta0 <- c(opt[1], opt[2])
@@ -58,13 +57,18 @@ theta0 <- c(opt[1], opt[2])
 missing.data <- y
 n.locs = nrow(x)
 for(i in 1:length(missing.data)){
-  missing.data[[i]]=missing.data[[i]]*(rbinom(n.locs,1,prob=0.75))
+  tmp=0
+  while(tmp ==0){
+    missing.inds=rbinom(n.locs,1,prob=0.8)
+    if(sum(missing.inds)>=2) tmp=1
+  }
+  missing.data[[i]]=missing.data[[i]]*missing.inds
   missing.data[[i]][missing.data[[i]]==0]=NA
 }
 
-means <- sapply(missing.data, mean, na.rm=T)
+means <- sapply(missing.data, mean,na.rm=T)
 
-missing.exceedances <- missing.data[means > quantile(means, 0.9, na.rm=T)]
+missing.exceedances <- missing.data[means > quantile(means, 0.9)]
 
 
 ##########################################################################
@@ -77,7 +81,10 @@ nllh <- function(y,x,theta) {
   # impose parametric constraints via penalization
   
   ifelse(theta[1] > 0 & theta[2] > 0 & theta[2] < 2,
-         spectralLikelihood(y, x, aux)[1], 1e10)
+         
+         spectralLikelihood(y, x, aux)[1],
+         
+         1e10)
 }
 #changed name due to confusion in the function call for spectralLiklihood()
 spectralLik <- function (obs, loc, vario, nCores = 1L, cl = NULL){
@@ -136,24 +143,49 @@ spectralLik <- function (obs, loc, vario, nCores = 1L, cl = NULL){
   (1/2 * logdetA + 1/2 * unlist(likelihood))
 }
 
-# theta0 <- c(0.5, 1)
+theta0 <- c(0.5, 1)
 theta.star <- theta0
+diff <- 1
 
-n.samples=2e5
-sample.list=vector("list",n.locs-2)
+library(evd)
+library(mvtnorm)
+
+n.samples=2e4
+xi = 2
+rho=0.2
+
+sample.list=vector("list",length(missing.exceedances))
 sample.dens.list=sample.list
 
-sample.list[[1]]=as.matrix(rgev(n.samples,1,1,1))
-sample.dens.list[[1]]= as.matrix(dgev(sample.list[[1]],1,1,1))
-for(i in 2:(n.locs-2)){
-  gumbel.cop <- archmCopula("gumbel", 5, dim = i)
-  sample <- rCopula(n.samples,gumbel.cop)
-  sample.gev <- qgev(sample,1,1,1) 
-  sample.list[[i]]= sample.gev
-  sample.dens.list[[i]]<-as.matrix(apply(apply(as.matrix(sample.gev),2,function(x) dgev(x,1,1,1)),1,prod) * dCopula(sample,gumbel.cop))
+
+
+for(i in 1:length(sample.list)){
+  dim=sum(is.na(missing.exceedances[[i]]))
+  
+  m=median(missing.exceedances[[i]],na.rm=T)
+  mu = m*log(2)^xi
+  sigma = mu*xi
+  if(dim==1){
+    
+    sample.list[[i]]=as.matrix(rgev(n.samples,mu,sigma,xi))
+    
+    sample.dens.list[[i]]= as.matrix(dgev(sample.list[[i]],mu,sigma,xi))
+  } 
+  if(dim>1){
+    
+    Sigma=matrix(rho,nrow=dim,ncol=dim)
+    diag(Sigma)=1
+    
+    sample <- rmvnorm(n.samples,mean=rep(0,dim),sigma=Sigma)
+    sample.gev <- apply(sample,c(2),function(x) qgev(pnorm(x),mu,sigma,xi))
+    sample.list[[i]]= sample.gev
+    sample.dens.list[[i]]<-as.matrix(apply(apply(sample.gev,2,function(x) dgev(x,mu,sigma,xi)),1,prod) * dmvnorm(sample,mean=rep(0,dim),sigma=Sigma))
+    
+  }
 }
-diff <- 1
+
 while(diff> 1e-3){
+  
   Q <- function(par, theta.star, missing.exceedances, x){
     theta=par
     n.exceed=length(missing.exceedances)
@@ -179,7 +211,7 @@ while(diff> 1e-3){
         # }
         
         # integral = cubature::cubintegrate(integrand, lower=rep(0,length(ind.miss)), upper = rep(Inf,length(ind.miss)))$integral
-        sample <- sample.list[[length(ind.miss)]]
+        sample <- sample.list[[i]]
         y=apply(as.matrix(sample),1,function(input){
           out=missing.exceedances[[i]]
           out[ind.miss]=input
@@ -194,9 +226,11 @@ while(diff> 1e-3){
         }
         # -spectralLikelihood(y,x,aux)*(exp(-spectralLikelihood(y,x,aux2)))
         # integral = mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/apply(as.matrix(sample[,1:length(ind.miss)]^{-2}-1),1,prod))
-        integral <- mean(-spectralLik(y,x,aux, nCores, cl)*(exp(-spectralLik(y,x,aux2, nCores, cl)))/sample.dens.list[[length(ind.miss)]])
+        
+        integral <- mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/sample.dens.list[[i]])
         
         Q.out <- Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
+        print(Q.out)
         # print(i)
         # print("missing")
         # print((integral/exp(-nllh(list(obs.y),obs.x,theta.star))))
@@ -206,19 +240,18 @@ while(diff> 1e-3){
     return(-Q.out)
   }
   
-  # Q(theta0,theta.star,missing.exceedances,x)
+  Q(theta0,theta.star,missing.exceedances,x)
   opt <- optim(par = theta.star, 
                fn = Q,
                theta.star = theta.star,
                missing.exceedances = missing.exceedances,
                x = x)
-  print(opt$par)
   theta.old <- theta.star
   theta.star <- c(opt$par[1], opt$par[2])
+  # print(theta.old)
+  print(theta.star)
   diff <- sum(abs(theta.star - theta.old))
+  # print(diff)
 }
 # theta.star=opt$par
 # opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
-
-
-
