@@ -1,19 +1,22 @@
 ## FIT SUM-PARETO BROWN-RESNICK PROCESS
 library(mvPot)
-library(cubature)
 library(Pareto)
-suppressMessages(library(compositions))
-# set.seed(2)
 
-n <- 500
+array.id=commandArgs(trailingOnly=T) #Assuming job array submission with bash/slurm
+print(array.id)
+
+set.seed(as.numeric(array.id))
+
+n <- 1000
 
 # define semivariogram, locations (x), and simulate data (y)
 
 # Max theta[1] < 1; theta[2] \approx 1
 
-svar <- function(x1_x2, theta = c(0.3, 0.8))
+svar <- function(x1_x2, theta = c(0.3, 1.2)){
   
   0.5*(norm(x1_x2, type = "2") / (theta[1]))^theta[2]
+}
 
 x <- expand.grid(seq(0,1,length=3),seq(0,1,length=3))
 
@@ -123,9 +126,8 @@ spectralLik <- function (obs, loc, vario, nCores = 1L, cl = NULL){
     matrix(computeVarMat, dim, dim)
   }, warning = function(war) {
     war
-  }, error = function(err) {
-    stop("The semi-variogram is not valid for the locations provided.")
   })
+  
   psi <- (outer(gamma[-1, 1], gamma[-1, 1], "+") - (gamma[-1, 
                                                           -1]))
   invPsi <- MASS::ginv(psi)
@@ -143,7 +145,7 @@ spectralLik <- function (obs, loc, vario, nCores = 1L, cl = NULL){
   (1/2 * logdetA + 1/2 * unlist(likelihood))
 }
 
-theta0 <- c(0.5, 1)
+theta0 <- c(0.5, 0.9)
 theta.star <- theta0
 diff <- 1
 
@@ -187,12 +189,16 @@ diff <- 1
 #   }
 # }
 
-n.samples=1e4
-rho=0.3
+library(compositions)
+
+
+n.samples=5e4
+print(n.samples)
+rho=0.1
 
 sample.list=vector("list",length(missing.exceedances))
 sample.dens.list=sample.list
-
+library(compositions)
 
 
 
@@ -203,13 +209,13 @@ for(i in 1:length(sample.list)){
   
   if(dim==1){
     
-    sample.list[[i]]=as.matrix(rlnorm(n.samples,log(m)))
+    sample.list[[i]]=as.matrix(rlnorm(n.samples,log(m),1.2))
     
-    sample.dens.list[[i]]= as.matrix(dlnorm(sample.list[[i]],log(m)))
+    sample.dens.list[[i]]= as.matrix(dlnorm(sample.list[[i]],log(m),1.2))
   } 
   if(dim>1){
     Sigma=matrix(rho,nrow=dim,ncol=dim)
-    diag(Sigma)=1
+    diag(Sigma)=1.2
     
     sample.rplus <- rlnorm.rplus(n.samples,rep(log(m),dim),varlog=Sigma)
     
@@ -220,9 +226,21 @@ for(i in 1:length(sample.list)){
   }
 }
 
-epsilon <- 1e-3
-cat("with epsilon:",epsilon)
-while(diff> epsilon){
+
+library(optimParallel)
+Ncores=8
+cl <- makeCluster(Ncores)
+setDefaultCluster(cl=cl)
+clusterExport(cl, "sample.list")
+clusterExport(cl, "sample.dens.list")
+
+clusterExport(cl, "spectralLik")
+clusterExport(cl, "x")
+clusterExport(cl, "svar")
+clusterExport(cl, "nllh")
+clusterExport(cl, "spectralLikelihood")
+
+while(diff> 1e-3){
   
   Q <- function(par, theta.star, missing.exceedances, x){
     theta=par
@@ -268,26 +286,26 @@ while(diff> epsilon){
         integral <- mean(-spectralLik(y,x,aux)*(exp(-spectralLik(y,x,aux2)))/sample.dens.list[[i]])
         
         Q.out <- Q.out + (integral/exp(-nllh(list(obs.y),obs.x,theta.star)))
-        # print(Q.out)
+        #print(Q.out)
         # print(i)
         # print("missing")
         # print((integral/exp(-nllh(list(obs.y),obs.x,theta.star))))
       }
     }
-    # print(-Q.out)
+    print(-Q.out)
     return(-Q.out)
   }
   
   #Q(theta0,theta.star,missing.exceedances,x)
-  opt <- optim(par = theta.star, 
-               fn = Q,
-               theta.star = theta.star,
-               missing.exceedances = missing.exceedances,
-               x = x, control=list(maxit=50))
+  opt <- optimParallel(par = theta.star, 
+                       fn = Q, lower =c(0.01,0.1),upper=c(2,2),
+                       theta.star = theta.star,
+                       missing.exceedances = missing.exceedances,
+                       x = x, parallel=list(loginfo=TRUE))
   theta.old <- theta.star
   theta.star <- c(opt$par[1], opt$par[2])
   # print(theta.old)
-  print(theta.star)
+  # print(theta.star)
   diff <- sum(abs(theta.star - theta.old))
   # print(diff)
 }
@@ -295,4 +313,6 @@ while(diff> epsilon){
 # opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
 
 
+print("Fin")
 
+saveRDS(theta.star,file=paste0("test",as.numeric(array.id),".rds"))
