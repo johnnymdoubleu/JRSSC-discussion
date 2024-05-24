@@ -5,7 +5,7 @@ library(Pareto)
 
 set.seed(4)
 
-n <- 1000
+n <- 2000
 
 # define semivariogram, locations (x), and simulate data (y)
 
