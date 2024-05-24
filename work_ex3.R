@@ -182,8 +182,6 @@ for(i in 1:length(sample.list)){
   }
 }
 
-
-
 Ncores=8
 cl <- makeCluster(Ncores)
 setDefaultCluster(cl=cl)
