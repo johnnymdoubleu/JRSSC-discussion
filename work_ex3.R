@@ -270,3 +270,5 @@ while(diff> 1e-3){
 print("Fin")
 
 saveRDS(theta.star,file=paste0("test",as.numeric(array.id),".rds"))
+
+readRDS("test4.rds")
