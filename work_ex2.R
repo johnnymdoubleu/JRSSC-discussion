@@ -13,7 +13,7 @@ n <- 500
 
 # define semivariogram, locations (x), and simulate data (y)
 
-svar <- function(x1_x2, theta = c(0.3, 0.8))
+svar <- function(x1_x2, theta = c(0.3, 1.2))
   
   0.5*(norm(x1_x2, type = "2") / (theta[1]))^theta[2]
 
@@ -57,7 +57,7 @@ theta0 <- c(opt[1], opt[2])
 missing.data <- y
 n.locs = nrow(x)
 for(i in 1:length(missing.data)){
-  missing.data[[i]]=missing.data[[i]]*(rbinom(n.locs,1,prob=0.75))
+  missing.data[[i]]=missing.data[[i]]*(rbinom(n.locs,1,prob=0.8))
   missing.data[[i]][missing.data[[i]]==0]=NA
 }
 
@@ -135,6 +135,17 @@ spectralLik <- function (obs, loc, vario, nCores = 1L, cl = NULL){
   (1/2 * logdetA + 1/2 * unlist(likelihood))
 }
 
+Ncores=8
+cl <- makeCluster(Ncores)
+setDefaultCluster(cl=cl)
+
+clusterExport(cl, "spectralLik")
+clusterExport(cl, "x")
+clusterExport(cl, "svar")
+clusterExport(cl, "nllh")
+clusterExport(cl, "spectralLikelihood")
+
+
 theta0 <- c(.1, .5)
 theta.star <- theta0
 diff <- 1
@@ -203,5 +214,5 @@ while(diff> epsilon){
 # theta.star=opt$par
 # opt=optim(theta0,Q,theta.star=theta.star,missing.exceedances=missing.exceedances,x=x)
 
-
+saveRDS(theta.star,file=paste0("test",as.numeric(array.id),Sys.Date(),".rds"))
 
