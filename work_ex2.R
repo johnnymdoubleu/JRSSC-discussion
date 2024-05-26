@@ -3,6 +3,7 @@ library(mvPot)
 library(cubature)
 library(Pareto)
 library(evd)
+library(optimParallel)
 # 
 # ncores <- 8
 # cl <- parallel::makeCluster(ncores)
