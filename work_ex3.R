@@ -270,5 +270,12 @@ while(diff> 1e-3){
 print("Fin")
 
 saveRDS(theta.star,file=paste0("test",as.numeric(array.id),".rds"))
-
-readRDS("test4.rds")
+for (i in 1:25){
+  skip_to_next <- FALSE
+  
+  # Note that print(b) fails since b doesn't exist
+  
+  tryCatch(print(readRDS(paste0("test",i, ".rds"))), error = function(e) { skip_to_next <<- TRUE})
+  
+  if(skip_to_next) { next }     
+}
